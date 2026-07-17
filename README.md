@@ -21,8 +21,8 @@ MX Master are trademarks of Logitech.
 - Menu bar shows the mouse glyph with the percentage; a lightning bolt
   while charging; an em dash when the mouse is disconnected or asleep.
 - Clicking the icon shows device name, percentage, charge state, last
-  check time, a Refresh Now action, polling interval settings, and
-  Quit.
+  check time, a Refresh Now action, polling interval settings, an
+  Open at Login toggle, and Quit.
 - Feature discovery is dynamic: it asks the ROOT feature (0x0000) for
   UNIFIED_BATTERY (0x1004, newer devices) and falls back to
   BATTERY_STATUS (0x1000, e.g. MX Master 3). Feature indices are
@@ -143,8 +143,11 @@ hash, so subsequent signed rebuilds keep the grant.
 
 ## Start at login
 
-System Settings > General > Login Items & Extensions > Open at Login >
-`+` > select `MXBattery.app`.
+Toggle "Open at Login" in the app's menu. It uses Apple's SMAppService
+API, so the entry appears under System Settings > General > Login
+Items & Extensions and can be revoked there too. (Requires the app to
+be running from a .app bundle; the dev-mode `python -m mxbattery.app`
+run hides the toggle.)
 
 ## Maintenance audit
 

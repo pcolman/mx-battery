@@ -14,8 +14,8 @@ OPTIONS = {
         "CFBundleName": "MXBattery",
         "CFBundleDisplayName": "MX Battery",
         "CFBundleIdentifier": "com.pcolman.mxbattery",
-        "CFBundleShortVersionString": "1.1.0",
-        "CFBundleVersion": "1.1.0",
+        "CFBundleShortVersionString": "1.2.0",
+        "CFBundleVersion": "1.2.0",
         # Menu-bar-only app: no Dock icon, no app switcher entry.
         "LSUIElement": True,
         "NSHumanReadableCopyright": "GPL-3.0. Local tool: no network access, read-only HID.",

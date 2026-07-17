@@ -12,8 +12,13 @@ import os
 import time
 
 import rumps
+from Foundation import NSBundle
+from ServiceManagement import SMAppService
 
 from . import hidpp
+
+# SMAppService status constants (macOS 13+).
+_SM_STATUS_ENABLED = 1
 
 # Poll interval presets. Nothing below 1 minute on purpose: battery moves
 # ~1% per 40+ min, so faster polling only adds BLE traffic to the mouse.
@@ -71,12 +76,22 @@ class MXBatteryApp(rumps.App):
             self.interval_items[label] = (item, secs)
             self.interval_menu.add(item)
 
+        # Login item toggle uses SMAppService, which only works for a real
+        # .app bundle — hide it in `python -m mxbattery.app` dev runs.
+        self.login_item = None
+        if str(NSBundle.mainBundle().bundlePath()).endswith(".app"):
+            self.login_item = rumps.MenuItem("Open at Login", callback=self.toggle_login)
+            self.login_item.state = (
+                1 if SMAppService.mainAppService().status() == _SM_STATUS_ENABLED else 0
+            )
+
         self.menu = [
             self.status_item,
             self.updated_item,
             None,
             rumps.MenuItem("Refresh Now", callback=self.refresh_now),
             self.interval_menu,
+            *( [self.login_item] if self.login_item else [] ),
             None,
             rumps.MenuItem("Quit MX Battery", callback=rumps.quit_application),
         ]
@@ -97,6 +112,17 @@ class MXBatteryApp(rumps.App):
         self.timer.interval = secs
         self.timer.start()
         self.poll(None)
+
+    def toggle_login(self, sender):
+        svc = SMAppService.mainAppService()
+        if svc.status() == _SM_STATUS_ENABLED:
+            ok, err = svc.unregisterAndReturnError_(None)
+        else:
+            ok, err = svc.registerAndReturnError_(None)
+        if not ok:
+            detail = str(err.localizedDescription()) if err else "unknown error"
+            rumps.alert("MX Battery", f"Login item change failed: {detail}")
+        sender.state = 1 if svc.status() == _SM_STATUS_ENABLED else 0
 
     def refresh_now(self, _sender):
         self.poll(None)
