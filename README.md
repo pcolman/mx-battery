@@ -136,9 +136,7 @@ Python has fallen behind Homebrew's security releases, the no-network
 and read-only-HID guarantees, `==` pinning discipline, and drift
 between source and the installed app. pip-audit queries the PyPI
 advisory database over the network; that is a dev-machine action only
-— the app itself remains network-free. (Claude Code users: the
-`/mx-battery-audit` skill in `.claude/skills/` runs and interprets
-it.)
+— the app itself remains network-free.
 
 Known accepted risk: setuptools is pinned to 80.9.0 (PYSEC-2026-3447,
 fixed in 83.0.0) because py2app's boot script requires pkg_resources,
