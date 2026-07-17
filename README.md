@@ -60,6 +60,22 @@ MX Master are trademarks of Logitech.
   USB receiver — receiver mode uses a different transport this app
   does not implement)
 
+## Install (prebuilt)
+
+Download `MXBattery-x.y.z.zip` and `checksums.txt` from
+[Releases](https://github.com/pcolman/mx-battery/releases), then:
+
+```sh
+shasum -a 256 -c checksums.txt   # must print: MXBattery-x.y.z.zip: OK
+unzip MXBattery-x.y.z.zip && mv MXBattery.app /Applications/
+```
+
+The app is not notarized with Apple, so Gatekeeper warns on first
+open: right-click MXBattery.app > Open > Open (one time only). Then
+grant Input Monitoring (see "Package as MXBattery.app" below for why
+macOS requires it) and relaunch. If you'd rather not trust a prebuilt
+binary, building from source takes four commands:
+
 ## Install from source
 
 ```sh
