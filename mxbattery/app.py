@@ -9,6 +9,7 @@ from __future__ import annotations
 import datetime
 import json
 import os
+import time
 
 import rumps
 
@@ -103,7 +104,13 @@ class MXBatteryApp(rumps.App):
     def poll(self, _timer):
         now = datetime.datetime.now().strftime("%-I:%M %p")
         try:
-            reading = hidpp.read_battery()
+            try:
+                reading = hidpp.read_battery()
+            except hidpp.DeviceNotResponding:
+                # Transient: HID session not ready right at launch, or a
+                # momentary collision with another HID client. One retry.
+                time.sleep(1.0)
+                reading = hidpp.read_battery()
         except hidpp.DeviceNotFound:
             self.title = TITLE_DISCONNECTED
             self.status_item.title = "Mouse not connected"
