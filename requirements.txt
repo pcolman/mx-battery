@@ -1,0 +1,7 @@
+# Runtime dependencies. All versions pinned.
+# hidapi (the only HID/native-device dependency) MUST be built from source:
+#   pip install --no-binary hidapi -r requirements.txt
+hidapi==0.15.0
+rumps==0.4.0
+pyobjc-core==12.2.1
+pyobjc-framework-Cocoa==12.2.1

@@ -1,0 +1,12 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Build artifacts (rebuild locally; never commit binaries)
+build/
+dist/
+*.egg-info/
+
+# macOS
+.DS_Store
