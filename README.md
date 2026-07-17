@@ -12,6 +12,8 @@ uses), with no Logitech software installed.
 Not affiliated with or endorsed by Logitech. Logitech, Logi, and
 MX Master are trademarks of Logitech.
 
+![MX Battery in the menu bar](docs/screenshot.png)
+
 ## What it does
 
 - Polls the mouse over the HID++ vendor channel (default every
