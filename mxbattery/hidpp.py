@@ -6,6 +6,8 @@ frames for the two read-only functions used here (ROOT.getFeature and the
 battery get-status functions). No configuration, remapping, DFU/firmware, or
 any other mutating HID++ feature is implemented, imported, or reachable.
 
+Transport is mxbattery.machid (our own ctypes/IOKit module, stdlib only).
+
 Protocol per Logitech HID++ 2.0, cross-checked against the Solaar project's
 documentation of the wire format (pwr-Solaar/Solaar). Reimplemented from
 scratch; no Solaar code is used.
@@ -13,11 +15,10 @@ scratch; no Solaar code is used.
 
 from __future__ import annotations
 
-import ctypes
 import time
 from dataclasses import dataclass
 
-import hid
+from . import machid
 
 VENDOR_LOGITECH = 0x046D
 # Bluetooth product IDs. Add new MX Master variants here.
@@ -58,11 +59,6 @@ _STATUS_1000 = {
     7: ("charging error", False),
 }
 
-# macOS: hidapi seizes devices exclusively by default and the OS refuses to
-# let anyone seize the system pointer. cython-hidapi does not expose the
-# shared-mode switch, but the statically linked symbol is reachable.
-ctypes.CDLL(hid.__file__).hid_darwin_set_open_exclusive(0)
-
 
 class DeviceNotFound(Exception):
     """No supported mouse is connected (powered off, asleep, out of range)."""
@@ -80,24 +76,21 @@ class BatteryReading:
     device_name: str
 
 
-def _find_interface():
-    """Locate the HID++ vendor-specific interface of a supported mouse.
-
-    A Bluetooth mouse exposes several HID collections; HID++ lives on the
-    Logitech vendor usage page 0xFF43 (older firmware: 0xFF00), long
-    messages on usage 0x0202.
+def _find_mouse():
+    """Return (device ref, name) for the first supported mouse, releasing
+    refs for everything else. On macOS one physical Bluetooth mouse is one
+    IOHIDDevice covering all its HID collections, so no interface selection
+    is needed — output reports route by report ID.
     """
-    candidates = []
-    for info in hid.enumerate(VENDOR_LOGITECH):
-        if info["product_id"] not in SUPPORTED_PIDS:
-            continue
-        if info["usage_page"] in (0xFF43, 0xFF00):
-            candidates.append(info)
-    candidates.sort(key=lambda i: 0 if i["usage"] == 0x0202 else 1)
-    if not candidates:
+    chosen = None
+    for ref, pid, product in machid.enumerate_devices(VENDOR_LOGITECH):
+        if chosen is None and pid in SUPPORTED_PIDS:
+            chosen = (ref, product or SUPPORTED_PIDS[pid])
+        else:
+            machid.release_ref(ref)
+    if chosen is None:
         raise DeviceNotFound()
-    c = candidates[0]
-    return c["path"], SUPPORTED_PIDS[c["product_id"]]
+    return chosen
 
 
 def _request(dev, feature_index: int, function: int, params: bytes = b"") -> bytes:
@@ -105,12 +98,15 @@ def _request(dev, feature_index: int, function: int, params: bytes = b"") -> byt
     fnid_swid = ((function & 0x0F) << 4) | SWID
     frame = bytes([LONG_REPORT_ID, DEVICE_INDEX, feature_index, fnid_swid]) + params
     frame += bytes(LONG_REPORT_LEN - len(frame))
-    dev.write(frame)
+    try:
+        dev.write(frame)
+    except OSError as exc:
+        raise DeviceNotResponding(f"HID write failed: {exc}") from exc
 
     deadline = time.monotonic() + READ_TIMEOUT_MS / 1000
     while time.monotonic() < deadline:
         remaining_ms = max(1, int((deadline - time.monotonic()) * 1000))
-        data = dev.read(LONG_REPORT_LEN, timeout_ms=remaining_ms)
+        data = dev.read(remaining_ms)
         if not data:
             continue
         if data[0] != LONG_REPORT_ID or data[1] != DEVICE_INDEX:
@@ -129,11 +125,12 @@ def read_battery() -> BatteryReading:
 
     Raises DeviceNotFound or DeviceNotResponding.
     """
-    path, name = _find_interface()
-    dev = hid.device()
+    ref, name = _find_mouse()
+    dev = machid.HIDDevice(ref)
     try:
-        dev.open_path(path)
+        dev.open()
     except OSError as exc:
+        dev.close()
         raise DeviceNotResponding(f"cannot open HID interface: {exc}") from exc
     try:
         feat_index = None

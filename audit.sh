@@ -17,7 +17,7 @@ section() { echo; echo "=== $1 ==="; }
 section "1. Known vulnerabilities (pip-audit over the full venv: runtime + build + dev)"
 "$SRC/.venv/bin/pip-audit" --skip-editable 2>&1 | grep -v "cachecontrol" || FAIL=1
 [[ ${pipestatus[1]} -ne 0 ]] && FAIL=1
-echo "(runtime deps are the ones shipped in the app: hidapi, rumps, pyobjc-*)"
+echo "(runtime deps shipped in the app: rumps, pyobjc-*; HID access is in-repo ctypes)"
 
 section "2. Embedded Python in the installed bundle vs Homebrew"
 BUNDLED=$(defaults read \
@@ -35,7 +35,8 @@ else
 fi
 
 section "4. App guarantees: HID writes only from the query builder"
-WRITES=$(grep -rn "\.write(" "$SRC/mxbattery" | grep -v "def _request" | grep -v "dev.write(frame)")
+WRITES=$(grep -rn --exclude-dir=__pycache__ "\.write(\|IOHIDDeviceSetReport" "$SRC/mxbattery" \
+  | grep -v "def _request" | grep -v "dev.write(frame)" | grep -v "machid.py")
 if [[ -n "$WRITES" ]]; then
   echo "REVIEW: HID/file write outside _request():"; echo "$WRITES"; FAIL=1
 else

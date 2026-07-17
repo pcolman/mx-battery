@@ -43,10 +43,11 @@ MX Master are trademarks of Logitech.
   app opens only the Logitech vendor interface of a supported mouse,
   in shared (non-exclusive) mode. No Accessibility, Camera, or other
   permissions.
-- **Dependencies pinned; HID stack built from source.** `hidapi` is a
-  Cython sdist that compiles the embedded hidapi C library locally
-  (`--no-binary hidapi`). `rumps`/`pyobjc` (UI only, no device access)
-  install as normal pinned wheels.
+- **No third-party HID stack.** Device access is this repo's own
+  ~180-line `mxbattery/machid.py` (ctypes + IOKit, Python stdlib only),
+  so the entire HID code path is auditable in one file. The only
+  dependencies are the pinned UI stack (`rumps`/`pyobjc`), which never
+  touches the device.
 - `audit.sh` runs the maintenance checks (pip-audit CVE scan, embedded
   Python currency, the guarantees above, pin discipline, deploy
   drift). See "Maintenance audit" below.
@@ -55,7 +56,6 @@ MX Master are trademarks of Logitech.
 
 - macOS on Apple Silicon or Intel (developed on macOS 15+)
 - Homebrew Python 3.13 (`brew install python@3.13`)
-- Xcode command line tools (for the local hidapi compile)
 - A supported mouse paired over Bluetooth (not the Logi Bolt/Unifying
   USB receiver — receiver mode uses a different transport this app
   does not implement)
@@ -66,7 +66,7 @@ MX Master are trademarks of Logitech.
 git clone https://github.com/pcolman/mx-battery.git
 cd mx-battery
 /opt/homebrew/bin/python3.13 -m venv .venv
-.venv/bin/pip install --no-binary hidapi -r requirements.txt
+.venv/bin/pip install -r requirements.txt
 ```
 
 ## Run (development)
@@ -170,10 +170,12 @@ dependency.
   feature index, and software ID; unsolicited events are ignored.
   HID++ error frames (`0xFF` in the feature slot) are surfaced as
   "not responding".
-- macOS hidapi opens HID devices *exclusively* by default and the OS
-  refuses to seize the system pointer; MX Battery switches hidapi to
-  shared mode via `hid_darwin_set_open_exclusive(0)` (called through
-  ctypes because cython-hidapi does not expose it).
+- HID transport is `mxbattery/machid.py`: IOHIDManager enumeration,
+  `IOHIDDeviceOpen` with options 0 (shared — never seizes the system
+  pointer), `IOHIDDeviceSetReport` for the query, and an input-report
+  callback pumped via `CFRunLoopRunInMode` for responses. One physical
+  Bluetooth mouse is one IOHIDDevice on macOS, so no per-collection
+  interface selection is needed.
 - Protocol reference: the Solaar project's documentation of HID++ 2.0
   (https://github.com/pwr-Solaar/Solaar). Reimplemented from scratch;
   no Solaar code or dependencies are used.
