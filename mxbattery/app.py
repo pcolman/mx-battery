@@ -155,8 +155,11 @@ class MXBatteryApp(rumps.App):
         else:
             fmt = TITLE_FMT_CHARGING if reading.is_charging else TITLE_FMT
             self.title = fmt.format(pct=reading.percentage)
+            # 0x1000 devices (MX Master 3) only report 4 discrete levels
+            # (100/50/20/5); say so instead of implying 1% precision.
+            approx = " — approx., mouse reports 4 levels" if reading.coarse else ""
             self.status_item.title = (
-                f"{reading.device_name}: {reading.percentage}% ({reading.status_label})"
+                f"{reading.device_name}: {reading.percentage}% ({reading.status_label}){approx}"
             )
         self.updated_item.title = f"Last checked: {now}"
 

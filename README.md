@@ -27,6 +27,14 @@ MX Master are trademarks of Logitech.
   UNIFIED_BATTERY (0x1004, newer devices) and falls back to
   BATTERY_STATUS (0x1000, e.g. MX Master 3). Feature indices are
   looked up per device, never hardcoded.
+- Precision depends on the model. The MX Master 3S / 4 report a true
+  1% state of charge (UNIFIED_BATTERY). The MX Master 3's firmware
+  only exposes BATTERY_STATUS, which reports **four discrete levels:
+  100 / 50 / 20 / 5** — so it legitimately shows 100% for days after
+  a full charge, then jumps straight to 50%. This is a firmware
+  limitation, not a bug (Logitech's own software has the same
+  granularity on this model); the dropdown marks these readings as
+  approximate.
 - Settings persist in `~/Library/Application Support/MX Battery/`.
 
 ## Security posture
@@ -186,6 +194,11 @@ dependency.
 - **"Mouse not connected"** — the mouse is off, asleep, or paired to
   another host. It recovers automatically on the next poll (or use
   Refresh Now).
+- **Stuck at 100% for days (MX Master 3)** — expected. The MX Master 3
+  only reports 100/50/20/5 over Bluetooth (its BATTERY_STATUS feature
+  advertises `number_of_levels = 4`; no finer-grained battery feature
+  exists on its firmware). The dropdown shows "approx., mouse reports
+  4 levels" for this model.
 - **Charging but no percentage shown** — expected on the MX Master 3:
   its BATTERY_STATUS feature reports the level as invalid while on
   external power. The percentage returns when unplugged.

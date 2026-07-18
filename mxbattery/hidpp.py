@@ -74,6 +74,10 @@ class BatteryReading:
     status_label: str        # "discharging", "charging", "full", ...
     is_charging: bool
     device_name: str
+    # True when the reading came from BATTERY_STATUS (0x1000), which only
+    # reports a few discrete levels (the MX Master 3 reports 100/50/20/5),
+    # not a true state of charge.
+    coarse: bool = False
 
 
 def _find_mouse():
@@ -158,6 +162,7 @@ def _read_battery_once() -> BatteryReading:
         if feat_index is None:
             raise DeviceNotResponding("no supported battery feature on device")
 
+        coarse = feat_id == FEATURE_BATTERY_STATUS
         if feat_id == FEATURE_UNIFIED_BATTERY:
             # get_status (function 1): [state_of_charge, level_flags, status, ext_power]
             resp = _request(dev, feat_index, 0x1)
@@ -174,6 +179,6 @@ def _read_battery_once() -> BatteryReading:
 
         if pct is not None:
             pct = max(0, min(100, pct))
-        return BatteryReading(pct, label, charging, name)
+        return BatteryReading(pct, label, charging, name, coarse)
     finally:
         dev.close()
