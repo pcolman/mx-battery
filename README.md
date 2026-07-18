@@ -129,14 +129,22 @@ So there are two update paths:
   Input Monitoring, relaunch.
 
 To make even full rebuilds keep their grant, give the app a stable
-signing identity once: in Keychain Access, Certificate Assistant >
+signing identity once. In Keychain Access, Certificate Assistant >
 Create a Certificate (e.g. "MXBattery Signing", Self-Signed Root,
-Code Signing), then after each rebuild:
+Code Signing) — **create it in, or move it to, the `login` keychain**,
+not System (a System-keychain key forces an admin prompt on every
+sign). Trust it for code signing (double-click > Trust > Code Signing:
+Always Trust). Then sign inside-out after each rebuild:
 
 ```sh
+codesign --force --sign "MXBattery Signing" \
+  dist/MXBattery.app/Contents/Frameworks/Python.framework/Versions/3.13
 codesign --force --deep --sign "MXBattery Signing" dist/MXBattery.app
+codesign --verify --deep --strict dist/MXBattery.app
 ```
 
+(The nested Python.framework must be signed before the outer bundle,
+or the deep verify fails with "nested code is modified or invalid".)
 The first signed build needs one last Input Monitoring re-add; after
 that, TCC matches on bundle id + certificate instead of the per-build
 hash, so subsequent signed rebuilds keep the grant.
