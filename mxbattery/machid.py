@@ -107,6 +107,20 @@ def _get_manager() -> c_void_p:
     return _manager
 
 
+def reset_manager() -> None:
+    """Drop the cached IOHIDManager so the next call rebuilds it.
+
+    The manager and the device refs it hands out go stale across a system
+    sleep/wake, after which IOHIDDeviceOpen fails on every attempt. A
+    long-running menu bar app must rebuild rather than trust the handle
+    forever; callers invoke this and retry on failure.
+    """
+    global _manager
+    if _manager is not None:
+        _cf.CFRelease(_manager)
+        _manager = None
+
+
 def enumerate_devices(vendor_id: int) -> list[tuple[c_void_p, int, str]]:
     """Return [(retained device ref, product_id, product name)] for a vendor.
 

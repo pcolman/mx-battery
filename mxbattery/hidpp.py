@@ -124,7 +124,20 @@ def read_battery() -> BatteryReading:
     """Open the mouse, resolve its battery feature, read state of charge.
 
     Raises DeviceNotFound or DeviceNotResponding.
+
+    The IOKit manager and its device refs go stale across a system
+    sleep/wake. On any failure, rebuild the manager and try once more with
+    fresh handles before surfacing the error, so the app recovers on the
+    first poll after the Mac wakes instead of staying stuck.
     """
+    try:
+        return _read_battery_once()
+    except (DeviceNotFound, DeviceNotResponding):
+        machid.reset_manager()
+        return _read_battery_once()
+
+
+def _read_battery_once() -> BatteryReading:
     ref, name = _find_mouse()
     dev = machid.HIDDevice(ref)
     try:
