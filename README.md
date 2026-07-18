@@ -123,7 +123,13 @@ So there are two update paths:
 - **Python-only changes** (anything in `mxbattery/` or `launcher.py`):
   run `./update_app.sh`. It syncs the source into
   `/Applications/MXBattery.app` in place and relaunches. The
-  permission grant survives; no System Settings visit.
+  permission grant survives (TCC keys on the main executable, which is
+  untouched). Note: on a *signed* bundle this breaks the deep
+  code-signature seal, since the swapped files live under the sealed
+  `Resources/`. The app still runs and keeps its grant, but
+  `codesign --verify --strict` will fail until the next full rebuild.
+  For a release-clean signed build, use the full rebuild path below,
+  not `update_app.sh`.
 - **Everything else** (dependency bumps, Python upgrade, setup.py):
   full `python setup.py py2app` rebuild, replace the app, re-add it in
   Input Monitoring, relaunch.
