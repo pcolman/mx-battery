@@ -91,7 +91,8 @@ class MXBatteryApp(rumps.App):
             None,
             rumps.MenuItem("Refresh Now", callback=self.refresh_now),
             self.interval_menu,
-            *( [self.login_item] if self.login_item else [] ),
+            # NB: "is not None" matters — an empty rumps.MenuItem is falsy.
+            *( [self.login_item] if self.login_item is not None else [] ),
             None,
             rumps.MenuItem("Quit MX Battery", callback=rumps.quit_application),
         ]
