@@ -5,7 +5,7 @@ macholib==1.16.4
 modulegraph==0.19.7
 packaging==26.2
 # py2app 0.28.8 requires pkg_resources, removed in newer setuptools.
-setuptools==80.9.0
+setuptools==83.0.0
 # pkg_resources (imported by py2app's boot script) needs jaraco at runtime,
 # so these must be installed for the bundle to include them.
 jaraco.text==4.3.0
